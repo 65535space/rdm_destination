@@ -40,11 +40,10 @@ class HomeState extends State<Home> {
   // late CameraPosition _currentCameraPosition;
   CameraPosition? _initialCameraPosition;
   double _direction = 0;
-  final bool _isTracking = false;
+  final bool _isTracking = false; // 経路情報を保存するかどうかを決める変数
   final List<LatLng> _routePoints = [];
-  bool _followUser = false; // 新しい変数：ユーザーの位置を追跡するかどうか
-  // クリアにする道
-  final List<LatLng> _clearedPath = [];
+  bool _followUser = false; // カメラがユーザーを追跡するか決める変数
+  final List<LatLng> _clearingTheFogPaths = []; //　ユーザーが通った経路情報を格納する
 
   @override
   void initState() {
@@ -68,21 +67,23 @@ class HomeState extends State<Home> {
     bool serviceEnabled;
     LocationPermission permission;
 
+    // 開発側が位置情報サービスを使えているのか確認するフェーズ
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       debugPrint('位置情報サービスが無効です。');
       return;
     }
 
+    //位置情報のパーミッションを確認するフェーズ
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
+      //denied=拒否
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
         debugPrint('位置情報の権限が拒否されました。');
         return;
       }
     }
-
     if (permission == LocationPermission.deniedForever) {
       debugPrint('位置情報の権限が永続的に拒否されています。');
       return;
@@ -179,7 +180,7 @@ class HomeState extends State<Home> {
                   zoomGesturesEnabled: true,
                   // 新しい位置に基づいて霧を再描画
                   onCameraMove: (CameraPosition position) {
-                    // マップが移動されたら自動追跡を無効にする
+                    // マップが移動されたらカメラが自動追跡しないようにする
                     setState(() {
                       _followUser = false;
                       // _currentCameraPosition = position;
@@ -192,7 +193,7 @@ class HomeState extends State<Home> {
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // ぼかし効果を追加,
               child: CustomPaint(
                 size: Size.infinite,
-                painter: FogPainter(_clearedPath, _currentPosition),
+                painter: FogPainter(_clearingTheFogPaths, _currentPosition),
               ),
             ),
           ),
@@ -207,16 +208,15 @@ class HomeState extends State<Home> {
 }
 
 class FogPainter extends CustomPainter {
-  final List<LatLng> clearedPath; // 霧が除去された道のリスト
+  final List<LatLng> clearingTheFogPaths;
   final LatLng? currentPosition;
 
-  FogPainter(this.clearedPath, this.currentPosition);
+  FogPainter(this.clearingTheFogPaths, this.currentPosition);
 
   @override
   void paint(Canvas canvas, Size size) {
-    // グラデーションを追加
+    // 霧を再現する
     final Rect rect = Rect.fromLTWH(0, 0, size.width, size.height);
-
     final Gradient gradient = RadialGradient(
       colors: [
         Colors.white.withOpacity(0.00001),
@@ -224,31 +224,29 @@ class FogPainter extends CustomPainter {
       ],
       stops: const [0.3, 1.0], //霧が中央から広がる感じ
     );
-
+    // TODO:後で学ぶべき場所
     final Paint fogPaint = Paint()..shader = gradient.createShader(rect);
 
     // 地図全体に霧を描画
     canvas.drawRect(rect, fogPaint);
 
-    // クリアされた経路に沿って霧を削除
     Paint clearPaint = Paint()
       ..color = Colors.transparent
       ..blendMode = BlendMode.clear;
 
-    for (var point in clearedPath) {
-      // クリアする領域（ここでは円形を例とする）
+    for (var point in clearingTheFogPaths) {
+      // クリアする領域（円形）
       canvas.drawCircle(
         Offset(point.latitude, point.longitude),
         20, //霧がクリアされる範囲
         clearPaint,
       );
     }
-    // 現在地部分の霧をクリアする
+    // 現在地中心から円形に霧をクリアする
     if (currentPosition != null) {
       Paint clearPaint = Paint()
         ..color = Colors.transparent
         ..blendMode = BlendMode.clear;
-      // 現在地を中心に円形に霧をクリアする
       canvas.drawCircle(
         Offset(size.width / 2, size.height / 2), // 現在地のスクリーン座標（仮）
         50, // 現在地周辺のクリア範囲
