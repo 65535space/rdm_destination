@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'keiro.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -199,9 +200,18 @@ class HomeState extends State<Home> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _onCurrentLocationButtonPressed,
-        child: const Icon(Icons.my_location),
+      floatingActionButton:
+          // FloatingActionButton(
+          //   onPressed: _onCurrentLocationButtonPressed,
+          //   child: const Icon(Icons.my_location),
+          // ),
+          FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const RdmKeiro()),
+          );
+        },
       ),
     );
   }
