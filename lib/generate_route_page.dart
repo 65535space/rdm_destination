@@ -383,41 +383,127 @@ class _GenerateRoutePageState extends State<GenerateRoutePage> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
                                     children: [
                                       TextButton(
                                           onPressed: () {},
-                                          child: const Text("+100")),
+                                          style: TextButton.styleFrom(
+                                              side: const BorderSide(
+                                                  color: Color(0xFFBDBDBD),
+                                                  width: 2.0),
+                                              fixedSize: const Size(80, 60)),
+                                          child: const Text(
+                                            "+100",
+                                            style: TextStyle(
+                                                color: Color(0xFF000000),
+                                                fontSize: 18),
+                                          )),
                                       TextButton(
                                           onPressed: () {},
-                                          child: const Text("+200")),
+                                          style: TextButton.styleFrom(
+                                              side: const BorderSide(
+                                                  color: Color(0xFFBDBDBD),
+                                                  width: 2.0),
+                                              fixedSize: const Size(80, 60)),
+                                          child: const Text(
+                                            "+200",
+                                            style: TextStyle(
+                                                color: Color(0xFF000000),
+                                                fontSize: 18),
+                                          )),
                                       TextButton(
                                           onPressed: () {},
-                                          child: const Text("+300"))
+                                          style: TextButton.styleFrom(
+                                              side: const BorderSide(
+                                                  color: Color(0xFFBDBDBD),
+                                                  width: 2.0),
+                                              fixedSize: const Size(80, 60)),
+                                          child: const Text(
+                                            "+300",
+                                            style: TextStyle(
+                                                color: Color(0xFF000000),
+                                                fontSize: 18),
+                                          ))
                                     ],
                                   ),
+                                  const Padding(
+                                      padding: EdgeInsets.only(bottom: 20)),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
                                     children: [
                                       TextButton(
                                           onPressed: () {},
-                                          child: const Text("+500")),
+                                          style: TextButton.styleFrom(
+                                              side: const BorderSide(
+                                                  color: Color(0xFFBDBDBD),
+                                                  width: 2.0),
+                                              fixedSize: const Size(80, 60)),
+                                          child: const Text(
+                                            "+500",
+                                            style: TextStyle(
+                                                color: Color(0xFF000000),
+                                                fontSize: 18),
+                                          )),
                                       TextButton(
                                           onPressed: () {},
-                                          child: const Text("+800")),
+                                          style: TextButton.styleFrom(
+                                              side: const BorderSide(
+                                                  color: Color(0xFFBDBDBD),
+                                                  width: 2.0),
+                                              fixedSize: const Size(80, 60)),
+                                          child: const Text(
+                                            "+800",
+                                            style: TextStyle(
+                                                color: Color(0xFF000000),
+                                                fontSize: 18),
+                                          )),
                                       TextButton(
                                           onPressed: () {},
-                                          child: const Text("+1300")),
+                                          style: TextButton.styleFrom(
+                                              side: const BorderSide(
+                                                  color: Color(0xFFBDBDBD),
+                                                  width: 2.0),
+                                              fixedSize: const Size(80, 60)),
+                                          child: const Text(
+                                            "+1300",
+                                            style: TextStyle(
+                                                color: Color(0xFF000000),
+                                                fontSize: 18),
+                                          )),
                                     ],
                                   ),
-                                  Container(
-                                    color: Colors.red,
-                                    height: 250,
-                                    width: 250,
-                                    child: Center(
-                                      child: Ink.image(
-                                        image: const AssetImage(
-                                            'assets/images/appIcon.png'),
+                                  const Padding(
+                                      padding: EdgeInsets.only(bottom: 20)),
+                                  Material(
+                                    elevation: 8,
+                                    shape: const CircleBorder(),
+                                    color: Colors.transparent, // 背景色を透明にする
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(83),
+                                      // タッチ領域を丸く設定
+                                      onTap: () {
+                                        // タップイベント処理
+                                        debugPrint("丸い画像がタップされました");
+                                      },
+                                      child: ClipOval(
+                                        child: Container(
+                                          decoration: const BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.white,
+                                          ),
+                                          width: 166, // コンテナの幅を設定
+                                          height: 166, // コンテナの高さを設定
+                                          child: Transform.scale(
+                                            scale: 0.6, // 画像を縮小（80%）
+                                            child: Image.asset(
+                                              'assets/images/appIcon.png',
+                                              fit: BoxFit
+                                                  .contain, // アスペクト比を保ちながら収める
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),

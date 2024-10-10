@@ -45,6 +45,7 @@ class _HomeAppState extends State<HomeApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: ThemeData(fontFamily: 'NotoSansJP'),
       home: IndexedStack(
         index: _currentIndex,
         children: _pages,
