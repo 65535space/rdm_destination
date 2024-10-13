@@ -22,3 +22,19 @@ _calculateDistanceメソッド
 "..."演算子->リストを全要素を展開する
 decodeとは->解読する
 json.decode->Json形式からMapへ変換
+
+位置情報を使用するか確認する場合は以下のコードを追加
+//位置情報のパーミッションを確認するフェーズ
+// permission = await Geolocator.checkPermission();
+// if (permission == LocationPermission.denied) {
+// //denied=拒否
+// permission = await Geolocator.requestPermission();
+// if (permission == LocationPermission.denied) {
+// debugPrint('位置情報の権限が拒否されました。');
+// return;
+// }
+// }
+// if (permission == LocationPermission.deniedForever) {
+// debugPrint('位置情報の権限が永続的に拒否されています。');
+// return;
+// }
