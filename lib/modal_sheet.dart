@@ -104,7 +104,7 @@ class _ModalSheetState extends State<ModalSheet> {
     }
   }
 
-  /// 現在地から半径1km (±100m) の範囲にランダムに9個の中継地点を生成するメソッド
+  /// 現在地から半径1km (±100m) の範囲にランダムに5個の中継地点を生成するメソッド
   Future<void> _generateRandomRelayPoints() async {
     debugPrint("_generateRandomRelayPoints was called");
     // LocationSettingsを設定する（desiredAccuracyは使わない)
@@ -130,7 +130,7 @@ class _ModalSheetState extends State<ModalSheet> {
 
     // 中継地点を9個作成
     for (int i = 0; i < 5; i++) {
-      // ランダムな距離（900m〜1100mの範囲）と方角（0〜360度）を生成
+      // 指定された距離と方角から目的地を生成
       // 20%の距離を5回に分けて中継地点を決める
       // 一回目に決めた角度から+ー45度の範囲を探索することで同じ道を通ることを回避する
       double randomDistance = _inputValue! * 0.2 -
