@@ -27,12 +27,13 @@ class _ModalSheetState extends State<ModalSheet> {
   bool _followUser = false; // FloatingActionButtonを押した際に、追跡するようにするため
   CameraPosition? _initialCameraPosition;
   final List<LatLng> _routePoints = []; // 霧機能のために通った経路を格納する
-  bool firstCalculateTime = true;
-  List<LatLng> _anotherDestinations = [];
-  List<LatLng> _sortedDestinations = [];
+  List<LatLng> _allPoints = [];
+  // List<LatLng> _sortedDestinations = [];
   final List<PolylineWayPoint> _waypoints = [];
   final TextEditingController _textEditingController = TextEditingController();
   int? _inputValue;
+  LatLng startPoint = const LatLng(0, 0);
+  LatLng nextStartPoint = const LatLng(0, 0);
 
   Future<void> _getCurrentPosition() async {
     debugPrint("_getCurrentPosition was called");
@@ -104,12 +105,16 @@ class _ModalSheetState extends State<ModalSheet> {
     }
   }
 
+  /// ランダムな距離と方角に基づいて中継地点の座標を計算するメソッド
+
   /// 現在地から半径1km (±100m) の範囲にランダムに5個の中継地点を生成するメソッド
   Future<void> _generateRandomRelayPoints() async {
     debugPrint("_generateRandomRelayPoints was called");
+    debugPrint("inputValue is $_inputValue");
+
     // LocationSettingsを設定する（desiredAccuracyは使わない)
     LocationSettings locationSettings = const LocationSettings(
-      accuracy: LocationAccuracy.high, // 高精度
+      accuracy: LocationAccuracy.bestForNavigation,
       distanceFilter: 0, // 0に設定することで、すべての位置情報を取得
     );
 
@@ -121,57 +126,85 @@ class _ModalSheetState extends State<ModalSheet> {
     Position currentPosition =
         await Geolocator.getCurrentPosition(locationSettings: locationSettings);
     LatLng currentLatLng = positionToLatLng(currentPosition);
+    debugPrint("currentLatLng: $currentLatLng");
 
     // 中継地点を格納するリスト
     List<LatLng> relayPoints = [];
-    LatLng? newPoint;
+    // LatLng? newPoint;
     double? firstRandomAngle;
     double fromSecondAngle;
 
-    // 中継地点を9個作成
+    // 中継地点を4個作成
     for (int i = 0; i < 5; i++) {
+      debugPrint("Loop times: $i");
+
+      double randomDistance = _inputValue! * 0.2 -
+          _inputValue! * 0.05 +
+          Random().nextDouble() * _inputValue! * 0.1;
+      debugPrint("randomDistance = $randomDistance");
+
+      //TODO: 90度現象（くるくる経路が回る）を止めよ
       // 指定された距離と方角から目的地を生成
       // 20%の距離を5回に分けて中継地点を決める
       // 一回目に決めた角度から+ー45度の範囲を探索することで同じ道を通ることを回避する
-      double randomDistance = _inputValue! * 0.2 -
-          _inputValue! * 0.1 +
-          Random().nextDouble() * _inputValue! * 0.2;
-
       // 現在地からランダムな距離と方角で中継地点を計算
-      if (firstCalculateTime == true) {
+      if (i == 0) {
         firstRandomAngle = Random().nextDouble() * 360; // 0～360度
-        newPoint = _calculateRelayPoint(currentPosition.latitude,
-            currentPosition.longitude, randomDistance, firstRandomAngle);
-        firstCalculateTime = false;
-        debugPrint("Angle is $firstRandomAngle");
+        // newPoint = _calculateRelayPoint(currentPosition.latitude,
+        //     currentPosition.longitude, randomDistance, firstRandomAngle);
+
+        // この後にURLを取得する
+        debugPrint("156: currentLatLng.latitude: ${currentLatLng.latitude} currentLatLng.longitude: ${currentLatLng.longitude}");
+        debugPrint("156: randomDistance: $randomDistance firstRandomAngle: $firstRandomAngle");
+
+        LatLng destination = _calculateRelayPoint(currentLatLng.latitude, currentLatLng.longitude, randomDistance, firstRandomAngle);
+        relayPoints.add(destination);
+        debugPrint("destination is $destination");
+
+        //1回目は捨てる(位置調整のため）
+        String url = 'https://maps.googleapis.com/maps/api/directions/json?origin=${currentLatLng.latitude},${currentLatLng.longitude}&destination=${destination.latitude},${destination.longitude}&mode=walking&key=${Secrets.apiKey}';
+        await _getRouteCoordinates(url);
+        url = 'https://maps.googleapis.com/maps/api/directions/json?origin=${startPoint.latitude},${startPoint.longitude}&destination=${nextStartPoint.latitude},${nextStartPoint.longitude}&mode=walking&key=${Secrets.apiKey}';
+        await _getRouteCoordinates(url);
+        debugPrint("startPoint: $startPoint");
+        debugPrint("nextStartPoint: $nextStartPoint");
       } else {
-        fromSecondAngle = (firstRandomAngle! - 45) + Random().nextDouble() * 90;
-        firstRandomAngle = fromSecondAngle;
-        debugPrint("Angle is $firstRandomAngle");
-        debugPrint("firstCalculateTime is false");
-        newPoint = _calculateRelayPoint(newPoint!.latitude, newPoint.longitude,
-            randomDistance, fromSecondAngle);
+        fromSecondAngle = (firstRandomAngle! - 40) + Random().nextDouble() * 80;
+        firstRandomAngle = fromSecondAngle; //次のfromSecondAngleを計算するために必要
+        debugPrint("Angle(fromSecondAngle) is $fromSecondAngle");
+        // newPoint = _calculateRelayPoint(newPoint!.latitude, newPoint.longitude,
+        //     randomDistance, fromSecondAngle);
+        // この後にURLを取得する
+
+        LatLng destination = _calculateRelayPoint(currentLatLng.latitude, currentLatLng.longitude, randomDistance, fromSecondAngle);
+        debugPrint("176: nextStartPoint.latitude: ${nextStartPoint.latitude} nextStartPoint.longitude: ${nextStartPoint.longitude}");
+        debugPrint("177: destination is $destination");
+
+        relayPoints.add(destination);
+        String url = 'https://maps.googleapis.com/maps/api/directions/json?origin=${nextStartPoint.latitude},${nextStartPoint.longitude}&destination=${destination.latitude},${destination.longitude}&mode=walking&key=${Secrets.apiKey}';
+        debugPrint("startPoint(2回目以降なのでnullかどうかどうかだけチェック): $startPoint");
+        debugPrint("nextStartPoint: $nextStartPoint");
+        await _getRouteCoordinates(url);
       }
 
       // 中継地点をリストに追加
-      relayPoints.add(newPoint);
+      // relayPoints.add(newPoint);
     }
 
     setState(() {
-      _anotherDestinations = [currentLatLng, ...relayPoints];
-      for (var i = 0; i < _anotherDestinations.length; i++) {
+      _allPoints = [currentLatLng, ...relayPoints];
+      for (var i = 0; i < _allPoints.length; i++) {
         _waypoints.add(PolylineWayPoint(
           location:
-              "${_anotherDestinations[i].latitude},${_anotherDestinations[i].longitude}",
+              "${_allPoints[i].latitude},${_allPoints[i].longitude}",
         ));
       }
       debugPrint("_another Destinations is $_waypoints");
     });
   }
 
-  /// ランダムな距離と方角に基づいて中継地点の座標を計算するメソッド
-  LatLng _calculateRelayPoint(
-      double baseLat, double baseLon, double distanceInMeters, double bearing) {
+
+  LatLng _calculateRelayPoint(double baseLat, double baseLon, double distanceInMeters, double bearing) {
     const double earthRadius = 6371000; // 地球の半径（メートル）
 
     // ラジアン単位に変換
@@ -199,59 +232,72 @@ class _ModalSheetState extends State<ModalSheet> {
     return LatLng(newLat, newLon);
   }
 
-  void _sortDestinations() {
-    debugPrint("_sortDestinations was called");
-    if (_currentPosition == null) {
-      debugPrint("_currentPosition == null:129");
-      return;
-    }
+  // void _sortDestinations() {
+  //   debugPrint("_sortDestinations was called");
+  //   if (_currentPosition == null) {
+  //     debugPrint("_currentPosition == null:214");
+  //     return;
+  //   }
+  //
+  //   _sortedDestinations = List.from(_allPoints);
+  //   //距離を昇順に並べ替える？
+  //   _sortedDestinations.sort((a, b) {
+  //     double distA = _calculateDistance(_currentPosition!, a);
+  //     double distB = _calculateDistance(_currentPosition!, b);
+  //     // (distA < distB)
+  //     return distA.compareTo(distB);
+  //   });
+  // }
 
-    _sortedDestinations = List.from(_anotherDestinations);
-    _sortedDestinations.sort((a, b) {
-      double distA = _calculateDistance(_currentPosition!, a);
-      double distB = _calculateDistance(_currentPosition!, b);
-      return distA.compareTo(distB);
-    });
-  }
 
   Future<void> _getOptimizedRoute() async {
     debugPrint("_getOptimizedRoute was called");
-    if (_currentPosition == null || _sortedDestinations.isEmpty) return;
+    //元は
+    // if (_currentPosition == null || _sortedDestinations.isEmpty) return;
+    if (_currentPosition == null) return;
 
-    List<LatLng> waypoints = [..._sortedDestinations];
-    debugPrint("waypoints is $waypoints");
-    for (int i = 0; i < waypoints.length - 1; i++) {
-      await _getRouteCoordinates(waypoints[i], waypoints[i + 1]);
-    }
+    // List<LatLng> waypoints = [..._sortedDestinations];
+    // debugPrint("waypoints is $waypoints");
+    // for (int i = 0; i < waypoints.length - 1; i++) {
+    //   await _getRouteCoordinates(waypoints[i], waypoints[i + 1]);
+    // }
 
     setState(() {
       // 最後の目的地にマーカーを追加
       widget.markers.add(Marker(
         markerId: const MarkerId('destination'),
-        position: _sortedDestinations.last,
+        //元 position: _sortedDestinations.last,
+        position: _allPoints.last,
       ));
     });
   }
 
-  double _calculateDistance(LatLng start, LatLng end) {
-    // ハバーサインの公式を用いた場合の2点間の距離
-    debugPrint("_calculateDistance was called");
-    var p = 0.017453292519943295;
-    var c = cos;
-    var a = 0.5 -
-        c((end.latitude - start.latitude) * p) / 2 +
-        c(start.latitude * p) *
-            c(end.latitude * p) *
-            (1 - c((end.longitude - start.longitude) * p)) /
-            2;
-    return 12742 * asin(sqrt(a));
-  }
 
-  // 目的地までの経路を取得する
-  Future<void> _getRouteCoordinates(LatLng start, LatLng destination) async {
+  // double _calculateDistance(LatLng start, LatLng end) {
+  //   // ハバーサインの公式を用いた場合の2点間の距離
+  //   debugPrint("_calculateDistance was called");
+  //   var p = 0.017453292519943295;
+  //   var c = cos;
+  //   var a = 0.5 -
+  //       c((end.latitude - start.latitude) * p) / 2 +
+  //       c(start.latitude * p) *
+  //           c(end.latitude * p) *
+  //           (1 - c((end.longitude - start.longitude) * p)) /
+  //           2;
+  //   return 12742 * asin(sqrt(a));
+  // }
+
+
+  // 目的地までの経路を登録と次の始点と終点を格納
+  Future<void> _getRouteCoordinates(String url) async {
     debugPrint("_getRouteCoordinates was called");
-    String url =
-        'https://maps.googleapis.com/maps/api/directions/json?origin=${start.latitude},${start.longitude}&destination=${destination.latitude},${destination.longitude}&mode=walking&key=${Secrets.apiKey}';
+
+    //指定するスタートと目標地点の確認
+    // debugPrint("startLatLng: $start");
+    // debugPrint("destinationLatLng: $destination");
+    //
+    // String url =
+    //     'https://maps.googleapis.com/maps/api/directions/json?origin=${start.latitude},${start.longitude}&destination=${destination.latitude},${destination.longitude}&mode=walking&key=${Secrets.apiKey}';
 
     try {
       var response = await http.get(Uri.parse(url));
@@ -265,6 +311,33 @@ class _ModalSheetState extends State<ModalSheet> {
           debugPrint("result['routes'] is not Empty");
           String points = result['routes'][0]['overview_polyline']['points'];
 
+          //一回目の始点を調整するため
+          if(startPoint == const LatLng(0,0)) {
+            try {
+              double latitude = result['routes'][0]['legs'][0]['start_location']['lat'];
+              double longitude = result['routes'][0]['legs'][0]['start_location']['lng'];
+              debugPrint("JSON latitude: $latitude ,longitude: $longitude");
+              startPoint = LatLng(latitude, longitude);
+              nextStartPoint = LatLng(result['routes'][0]['legs'][0]['end_location']['lat'], result['routes'][0]['legs'][0]['end_location']['lng']);
+              debugPrint('LatLng: (${startPoint.latitude}, ${startPoint.longitude})');
+              return;
+            } catch (e) {
+              debugPrint('Invalid input (startPoint): $e');
+            }
+          }
+
+          //二回目からの始点を調整するため
+          try {
+            double latitude = result['routes'][0]['legs'][0]['end_location']['lat'];
+            double longitude = result['routes'][0]['legs'][0]['end_location']['lng'];
+            debugPrint("latitude: $latitude ,longitude: $longitude");
+            nextStartPoint = LatLng(latitude, longitude);
+            debugPrint('LatLng: (${nextStartPoint.latitude}, ${nextStartPoint.longitude})');
+          } catch (e) {
+            debugPrint('Invalid input (nextStartPoint): $e');
+          }
+          debugPrint("324 startPoint: $startPoint");
+          debugPrint("325 nextStartPoint: $nextStartPoint");
           debugPrint("points is $points");
 
           List<LatLng> routeCoords = PolylinePoints()
@@ -276,7 +349,7 @@ class _ModalSheetState extends State<ModalSheet> {
 
           setState(() {
             widget.polylines.add(Polyline(
-              polylineId: PolylineId('${start.latitude},${start.longitude}'),
+              polylineId: PolylineId('${result['routes'][0]['legs'][0]['start_location']['lat']},${result['routes'][0]['legs'][0]['start_location']['lng']}'),
               color: Colors.blue,
               points: routeCoords,
               width: 5,
@@ -284,6 +357,8 @@ class _ModalSheetState extends State<ModalSheet> {
           });
           // _polylines の内容をデバッグ出力する
           debugPrint('Polyline Count: ${widget.polylines.length}');
+          debugPrint("345 startPoint: $startPoint");
+          debugPrint("346 nextStartPoint: $nextStartPoint");
         }
       } else {
         debugPrint("Error fetching directions: ${response.statusCode}");
@@ -448,7 +523,7 @@ class _ModalSheetState extends State<ModalSheet> {
                     await _getCurrentPosition();
                     if (_currentPosition != null) {
                       await _generateRandomRelayPoints();
-                      _sortDestinations();
+                      // _sortDestinations();
                       await _getOptimizedRoute();
                       if (mounted) {
                         Navigator.pop(context, {
@@ -459,7 +534,7 @@ class _ModalSheetState extends State<ModalSheet> {
                         debugPrint("ウィジェットが破棄されたため、Navigator.pop を呼び出しません。");
                       }
                     } else {
-                      debugPrint("_currentPosition == null:56");
+                      debugPrint("_currentPosition == null:462");
                     }
                   } catch (e) {
                     debugPrint('例外発生: ${e.toString()}');
