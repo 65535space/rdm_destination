@@ -144,6 +144,8 @@ class _ModalSheetState extends State<ModalSheet> {
       debugPrint("randomDistance = $randomDistance");
 
       //TODO: 90度現象（くるくる経路が回る）を止めよ
+      //第一案：Angleが全て最初の位置から見て何度かになってる
+      
       // 指定された距離と方角から目的地を生成
       // 20%の距離を5回に分けて中継地点を決める
       // 一回目に決めた角度から+ー45度の範囲を探索することで同じ道を通ることを回避する
@@ -154,8 +156,8 @@ class _ModalSheetState extends State<ModalSheet> {
         //     currentPosition.longitude, randomDistance, firstRandomAngle);
 
         // この後にURLを取得する
-        debugPrint("156: currentLatLng.latitude: ${currentLatLng.latitude} currentLatLng.longitude: ${currentLatLng.longitude}");
-        debugPrint("156: randomDistance: $randomDistance firstRandomAngle: $firstRandomAngle");
+        debugPrint("159: currentLatLng.latitude: ${currentLatLng.latitude} currentLatLng.longitude: ${currentLatLng.longitude}");
+        debugPrint("160: randomDistance: $randomDistance firstRandomAngle: $firstRandomAngle");
 
         LatLng destination = _calculateRelayPoint(currentLatLng.latitude, currentLatLng.longitude, randomDistance, firstRandomAngle);
         relayPoints.add(destination);
@@ -169,16 +171,16 @@ class _ModalSheetState extends State<ModalSheet> {
         debugPrint("startPoint: $startPoint");
         debugPrint("nextStartPoint: $nextStartPoint");
       } else {
-        fromSecondAngle = (firstRandomAngle! - 40) + Random().nextDouble() * 80;
+        fromSecondAngle = (firstRandomAngle! - 45) + Random().nextDouble() * 90;
         firstRandomAngle = fromSecondAngle; //次のfromSecondAngleを計算するために必要
         debugPrint("Angle(fromSecondAngle) is $fromSecondAngle");
         // newPoint = _calculateRelayPoint(newPoint!.latitude, newPoint.longitude,
         //     randomDistance, fromSecondAngle);
         // この後にURLを取得する
 
-        LatLng destination = _calculateRelayPoint(currentLatLng.latitude, currentLatLng.longitude, randomDistance, fromSecondAngle);
-        debugPrint("176: nextStartPoint.latitude: ${nextStartPoint.latitude} nextStartPoint.longitude: ${nextStartPoint.longitude}");
-        debugPrint("177: destination is $destination");
+        LatLng destination = _calculateRelayPoint(nextStartPoint.latitude, nextStartPoint.longitude, randomDistance, fromSecondAngle);
+        debugPrint("182: nextStartPoint.latitude: ${nextStartPoint.latitude} nextStartPoint.longitude: ${nextStartPoint.longitude}");
+        debugPrint("183: destination is $destination");
 
         relayPoints.add(destination);
         String url = 'https://maps.googleapis.com/maps/api/directions/json?origin=${nextStartPoint.latitude},${nextStartPoint.longitude}&destination=${destination.latitude},${destination.longitude}&mode=walking&key=${Secrets.apiKey}';
@@ -336,8 +338,8 @@ class _ModalSheetState extends State<ModalSheet> {
           } catch (e) {
             debugPrint('Invalid input (nextStartPoint): $e');
           }
-          debugPrint("324 startPoint: $startPoint");
-          debugPrint("325 nextStartPoint: $nextStartPoint");
+          debugPrint("341 startPoint: $startPoint");
+          debugPrint("342 nextStartPoint: $nextStartPoint");
           debugPrint("points is $points");
 
           List<LatLng> routeCoords = PolylinePoints()
@@ -357,8 +359,8 @@ class _ModalSheetState extends State<ModalSheet> {
           });
           // _polylines の内容をデバッグ出力する
           debugPrint('Polyline Count: ${widget.polylines.length}');
-          debugPrint("345 startPoint: $startPoint");
-          debugPrint("346 nextStartPoint: $nextStartPoint");
+          debugPrint("362 startPoint: $startPoint");
+          debugPrint("363 nextStartPoint: $nextStartPoint");
         }
       } else {
         debugPrint("Error fetching directions: ${response.statusCode}");
@@ -525,14 +527,12 @@ class _ModalSheetState extends State<ModalSheet> {
                       await _generateRandomRelayPoints();
                       // _sortDestinations();
                       await _getOptimizedRoute();
-                      if (mounted) {
-                        Navigator.pop(context, {
-                          'polyline': widget.polylines,
-                          'marker': widget.markers,
-                        });
-                      } else {
-                        debugPrint("ウィジェットが破棄されたため、Navigator.pop を呼び出しません。");
-                      }
+
+                      if (!context.mounted) return;
+                      Navigator.pop(context, {
+                        'polyline': widget.polylines,
+                        'marker': widget.markers,
+                      });
                     } else {
                       debugPrint("_currentPosition == null:462");
                     }

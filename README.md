@@ -47,9 +47,14 @@ _getRouteCoordinatesメソッドの引数と、その引数を用いて入手し
 そこから、90度の角度で再度200m先の点を指すということを繰り返す。そのため、指す点が建物や、通れない道となる場合がでてくる。
 指した点が、GCPが経路計算に使用可能な場所（道）とずれていると修正しようとすると推論したため、
 それを防ぐために、2回目からは、一つ前のGCPから得られたJSON内の目標地点を次の始点として経路を生成するようにする。
+→JSONのn-1の目標地点をnの始点にすることにより、経路がつながり、敷地をまたぐことや、区間ごとにとぎれなくなった。
+
 2. 生成速度が少し遅い問題
 3. 生成後も現在地中心の画面のまま
 4. modalseet.dartで次のエラーが出ている原因"Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check."
+   https://dart.dev/tools/linter-rules/use_build_context_synchronously
+次のコードを付け足すことで回避した
+   if (!context.mounted) return;
 5. 簡易画面表示を作っていない
 6. 設定画面いるかいらないか
 7. 機能が少ない点（霧とかを追加したらどう？）
