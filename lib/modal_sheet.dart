@@ -133,6 +133,12 @@ class _ModalSheetState extends State<ModalSheet> {
     // LatLng? newPoint;
     double? firstRandomAngle;
     double fromSecondAngle;
+    DateTime? startTime; // ボタン押下時刻
+    DateTime? endTime; // 経路表示完了時刻
+
+    setState(() {
+        startTime = DateTime.now();
+    });
 
     // 中継地点を4個作成
     for (int i = 0; i < 5; i++) {
@@ -143,7 +149,6 @@ class _ModalSheetState extends State<ModalSheet> {
           Random().nextDouble() * _inputValue! * 0.1;
       debugPrint("randomDistance = $randomDistance");
 
-      //TODO: 90度現象（くるくる経路が回る）を止めよ
       //第一案：Angleが全て最初の位置から見て何度かになってる
       
       // 指定された距離と方角から目的地を生成
@@ -203,6 +208,15 @@ class _ModalSheetState extends State<ModalSheet> {
       }
       debugPrint("_another Destinations is $_waypoints");
     });
+
+    setState(() {
+      endTime = DateTime.now();
+    });
+    // 結果を表示
+    if (startTime != null && endTime != null) {
+      Duration elapsed = endTime!.difference(startTime!);
+      debugPrint('経路表示までの時間: ${elapsed.inMilliseconds} ms');
+    }
   }
 
 

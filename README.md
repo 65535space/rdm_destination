@@ -50,11 +50,17 @@ _getRouteCoordinatesメソッドの引数と、その引数を用いて入手し
 →JSONのn-1の目標地点をnの始点にすることにより、経路がつながり、敷地をまたぐことや、区間ごとにとぎれなくなった。
 
 2. 生成速度が少し遅い問題
+生成ボタンを押してから、経路が表示されるまでの時間（経路を表示するメソッドが実行されるまでの時間）を測った。
+大体1900ms~2600msだった。これは、現代のソフトウェアでは少し遅いと感じられる。
+Flutter DevToolsを使ってみた。
+
 3. 生成後も現在地中心の画面のまま
+
 4. modalseet.dartで次のエラーが出ている原因"Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check."
    https://dart.dev/tools/linter-rules/use_build_context_synchronously
 次のコードを付け足すことで回避した
    if (!context.mounted) return;
+
 5. 簡易画面表示を作っていない
 6. 設定画面いるかいらないか
 7. 機能が少ない点（霧とかを追加したらどう？）
